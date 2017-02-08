@@ -17,9 +17,9 @@ except ImportError:
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--datafile', help='plik YAML z danym')
-parser.add_argument('--parent', help='rodzic występujący o zasiłek')
-parser.add_argument('--child', help='dziecko pozostające pod opieką')
+parser.add_argument('--datafile', help='plik YAML z danym', required=True)
+parser.add_argument('--parent', help='rodzic występujący o zasiłek', required=True)
+parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
 parser.add_argument('--since', help='pierwszy dzień zwolnienia')
 parser.add_argument('--until', help='ostatni dzień zwolnienia')
 args = parser.parse_args()
@@ -86,6 +86,32 @@ part1_layout={
     'leave_since': (88.311625, 634.5),
     'leave_until': (235.713625, 634.5),
 }
+
+# cairo    inkscape
+# (0,0) -> (0.8, 824.690)
+
+# |      x1 |     y_1 |      x2 |       xm |   y_pdf |         x |      y |
+# |---------+---------+---------+----------+---------+-----------+--------|
+# |  49.029 | 775.252 |  63.769 |   56.399 |  66.638 | 52.273625 | 47.908 |
+# | 181.690 | 775.252 | 196.430 |   189.06 |  66.638 | 184.93463 | 47.908 |
+# |  63.518 | 754.843 |  78.758 |   71.138 |  87.047 | 67.012625 | 68.317 |
+# | 181.439 | 754.843 | 196.679 |  189.059 |  87.047 | 184.93363 | 68.317 |
+# | 358.321 | 734.434 | 373.561 |  365.941 | 107.456 | 361.81563 | 88.726 |
+# | 417.281 | 734.434 | 432.522 | 424.9015 | 107.456 | 420.77613 | 88.726 |
+# #+TBLFM: $4=($1+$3)/2::$5=841.89-$2::$6=$4 - (8.25075/2)::$7=$5-17.2-1.53
+
+# 17.2pt położenie linii podstawowej tekstu na Y=0
+# 1.53pt przesunięcie na środek kratki
+# 8.pt szerokość komórki znaku
+
+part2_layout={
+    'other_caregiver_p': ((52.634625, 695.602), (126.33563, 695.602)),
+    'shift_work':  ((52.634625, 756.378), (126.33563, 756.378)),
+    # Strona 2.
+    'other_caregiver_d': ((52.399, 47.908), (184.93463, 47.908),
+                          (67.012625, 68.317), (184.93363, 68.317),
+                          (361.81563, 88.726), (420.77613, 88.726))
+}
 #get font families:
 
 font_map = pangocairo.cairo_font_map_get_default()
@@ -97,6 +123,7 @@ pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
 layout = pangocairo_context.create_layout()
 fontname = 'M+ 1m 12'
 font = pango.FontDescription(fontname)
+font.set_size(12*pango.SCALE)
 layout.set_font_description(font)
 
 def boxed_text(ctx, x, y, text):
@@ -109,6 +136,68 @@ def boxed_text(ctx, x, y, text):
     pangocairo_context.update_layout(layout)
     pangocairo_context.show_layout(layout)
     ctx.restore()
+
+def boxed_mark(ctx, x, y):
+    ctx.save()
+    ctx.translate(x,y)
+    t = pango.parse_markup(u"<span letter_spacing=\"6880\">X</span>")
+    layout.set_attributes(t[0])
+    layout.set_text(t[1])
+    ctx.set_source_rgb(0,0,0)
+    pangocairo_context.update_layout(layout)
+    pangocairo_context.show_layout(layout)
+    ctx.restore()
+
+def other_caregiver_p(ctx, leave):
+    (yes, no)=part2_layout['other_caregiver_p']
+    try:
+        t = leave['other_caregiver']
+    except KeyError:
+        t = False
+    if t:
+        boxed_mark(ctx, yes[0], yes[1])
+    else:
+        boxed_mark(ctx, no[0], no[1])
+
+def shift_work(ctx, parent):
+    (yes, no)=part2_layout['shift_work']
+    try:
+        t = parent['shift_work']
+    except KeyError:
+        t = False
+    if t:
+        boxed_mark(ctx, yes[0], yes[1])
+    else:
+        boxed_mark(ctx, no[0], no[1])
+
+def other_caregiver(ctx, parent):
+    (_parent, spouse, work_y, work_n, shift_w_y, shift_w_n)=part2_layout['other_caregiver_d']
+    if parent['parent'].upper() == 'OJECIEC' or \
+       parent['parent'].upper() == 'MATKA':
+        print "a parent"
+        boxed_mark(ctx, _parent[0], _parent[1])
+    else:
+        print "a spouse"
+        boxed_mark(ctx, spouse[0], spouse[1])
+
+    try:
+        t = parent['employer']
+    except KeyError:
+        t = None
+    if not t is None:
+        boxed_mark(ctx, work_y[0], work_y[1])
+    else:
+        boxed_mark(ctx, work_n[0], work_n[1])
+
+    try:
+        t = parent['shift_work']
+    except KeyError:
+        t = False
+    if t:
+        boxed_mark(ctx, shift_w_y[0], shift_w_y[1])
+    else:
+        boxed_mark(ctx, shift_w_n[0], shift_w_n[1])
+    # TODO shift work hours
 
 opt_parent=args.parent
 opt_child=args.child
@@ -182,15 +271,23 @@ boxed_text(context, x, y, t)
 (x,y)=part1_layout['child_born']
 boxed_text(context, x, y, d)
 
-
+this_parent=part1_data['parents'][opt_parent]
+this_leave=this_parent['leaves'][-1]
 (x,y)=part1_layout['leave_since']
-d=part1_data['part1']['leaves'][-1]['since'].strftime('%d%m%Y')
+d=this_leave['since'].strftime('%d%m%Y')
 boxed_text(context, x, y, d)
 
 (x,y)=part1_layout['leave_until']
-d=part1_data['part1']['leaves'][-1]['until'].strftime('%d%m%Y')
+d=this_leave['until'].strftime('%d%m%Y')
 boxed_text(context, x, y, d)
 
+other_caregiver_p(context, this_leave)
+shift_work(context, this_parent)
+
+context.show_page()
+
+other_parent=part1_data['parents'][this_parent['other_parent']]
+other_caregiver(context, other_parent)
 
 #layout.set_text(u"Hello World")
 #layout.set_text(u"NNNNNNNNNNN")
