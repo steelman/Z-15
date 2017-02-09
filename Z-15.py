@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 # https://www.cairographics.org/cookbook/pycairo_pango/
 #
-# python Z-15.py && pdftk Z-15.pdf background Z-15-template.pdf output out.pdf
+# python Z-15.py && pdftk Z-15.pdf multibackground Z-15-template.pdf output out.pdf
 #
 import cairo
 import pango
 import pangocairo
+import dateutil.parser
 import datetime
 import sys
 from yaml import load, dump
@@ -16,12 +17,24 @@ except ImportError:
     from yaml import Loader, Dumper
 
 import argparse
+
+class DateArgAction(argparse.Action):
+    # def __init__(self, option_strings, dest, nargs=None, **kwargs):
+    #     if nargs is not None:
+    #         raise ValueError("nargs not allowed")
+    #     super(FooAction, self).__init__(option_strings, dest, **kwargs)
+    def __call__(self, parser, namespace, values, option_string=None):
+        _date = dateutil.parser.parse(values)
+        print '%r %r %r' % (namespace, values, option_string)
+        setattr(namespace, self.dest, _date)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--datafile', help='plik YAML z danym', required=True)
 parser.add_argument('--parent', help='rodzic występujący o zasiłek', required=True)
 parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
 parser.add_argument('--since', help='pierwszy dzień zwolnienia')
 parser.add_argument('--until', help='ostatni dzień zwolnienia')
+parser.add_argument('--date', help='data wypełnienia formularza', action=DateArgAction)
 args = parser.parse_args()
 
 ### PESEL ###
@@ -110,32 +123,50 @@ part2_layout={
     # Strona 2.
     'other_caregiver_d': ((52.399, 47.908), (184.93463, 47.908),
                           (67.012625, 68.317), (184.93363, 68.317),
-                          (361.81563, 88.726), (420.77613, 88.726))
+                          (361.81563, 88.726), (420.77613, 88.726)),
+    'former_insurance': ((420.4035, 143.719), ( 479.364, 143.719)),
+    'other_parent_care': ((52.399, 503.74),  # matka
+                          (52.399, 524.149), # ojciec
+                          (52.399, 544.559), # małżonek/małżonka
+                          (31.039, 565.684), # dane osoby
+                          (170.887, 726.563), # TAK, porała zasiłek
+                          (229.848, 726.563), # NIE pobrała zasiłku
+                          (52.399, 746.973),  # <14 lat
+                          (52.399, 767.382),  # >= 14 lat
+    # Strona 3.
+                          (30.958, 48.25),
+                      ),
 }
-#get font families:
 
-font_map = pangocairo.cairo_font_map_get_default()
-families = font_map.list_families()
+#get font families:
+#font_map = pangocairo.cairo_font_map_get_default()
+#families = font_map.list_families()
 
 pangocairo_context = pangocairo.CairoContext(context)
 pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
 
 layout = pangocairo_context.create_layout()
 fontname = 'M+ 1m 12'
-font = pango.FontDescription(fontname)
-font.set_size(12*pango.SCALE)
-layout.set_font_description(font)
+font_desc = pango.FontDescription(fontname)
+font_desc.set_size(12*pango.SCALE)
+layout.set_font_description(font_desc)
 
-def boxed_text(ctx, x, y, text):
+def _text(ctx, x, y, text, spacing):
     ctx.save()
     ctx.translate(x,y)
-    t = pango.parse_markup(u"<span letter_spacing=\"6880\">" + text.upper() + "</span>")
+    t = pango.parse_markup(u"<span letter_spacing=\"" + str(spacing) +"\">" + text.upper() + "</span>")
     layout.set_attributes(t[0])
     layout.set_text(t[1])
     ctx.set_source_rgb(0,0,0)
     pangocairo_context.update_layout(layout)
     pangocairo_context.show_layout(layout)
     ctx.restore()
+
+def boxed_text(ctx, x, y, text):
+    _text(ctx, x, y, text, 6880)
+
+def line_text(ctx, x, y, text):
+    _text(ctx, x, y, text, 0)
 
 def boxed_mark(ctx, x, y):
     ctx.save()
@@ -199,6 +230,82 @@ def other_caregiver(ctx, parent):
         boxed_mark(ctx, shift_w_n[0], shift_w_n[1])
     # TODO shift work hours
 
+def former_insurance(ctx, parent):
+    (yes, no) = part2_layout['former_insurance']
+
+    try:
+        t = parent['former_employer']
+    except KeyError:
+        t = None
+    if t is None:
+        boxed_mark(ctx, no[0], no[1])
+    else:
+        #TODO Sprawdzić czy u poprzedniego pracodawcy było wypłacane
+        boxed_mark(ctx, yes[0], yes[1])
+
+def leaves_this_year(leaves):
+    ret = []
+    y1 = datetime.date(opt_date.year, 1, 1)
+    y2 = datetime.date.today()
+    for l in leaves:
+        since = l['since']
+        until = l['until'] + datetime.timedelta(days=1)
+        if  y1 <= since and since < y2 or \
+            y1 <= until and until < y2:
+            ret.append(l)
+    return ret
+
+def other_parent_took_care(ctx, parent):
+    (mother, father, \
+     spouse, other_parent_info_box, \
+     yes, no, lt14, ge14,
+     employer_info_box) = part2_layout['other_parent_care']
+    if parent['parent'].upper() == 'MATKA':
+        boxed_mark(ctx, mother[0], mother[1])
+    elif parent['parent'].upper() == 'OJCIEC':
+        boxed_mark(ctx, father[0], father[1])
+    else:
+        boxed_mark(ctx, spouse[0], spouse[1])
+
+    personal_info(context, other_parent_info_box[0], other_parent_info_box[1], parent)
+
+    if len(leaves_this_year(parent['leaves'])) > 0:
+        boxed_mark(ctx, yes[0], yes[1])
+    else:
+        boexd_mark(ctx, no[0], no[1])
+
+    for l in leaves_this_year(parent['leaves']):
+        _s = l['since']
+        _c = part1_data['part1']['child'][l['child']]
+        _d = pesel_data(_c['id'])
+        _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
+        if _s < _age14:
+            boxed_mark(ctx, lt14[0], lt14[1])
+            break
+
+    for l in leaves_this_year(parent['leaves']):
+        _s = l['since']
+        _c = part1_data['part1']['child'][l['child']]
+        _d = pesel_data(_c['id'])
+        _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
+        if _s >= _age14:
+            boxed_mark(ctx, ge14[0], ge14[1])
+            break
+
+    ctx.show_page()
+
+    employer_info(ctx, employer_info_box[0], employer_info_box[1])
+
+def personal_info(ctx, x, y, parent):
+    boxed_text(ctx, x+3.249+3.62, y+35.99-1.53, parent['id'])
+    line_text(ctx, x+6.82, y+72.9265-1.53, parent['last_name'])
+    line_text(ctx, x+6.82, y+101.9265-1.53, parent['first_name'])
+
+def employer_info(ctx, x, y, employer):
+    pass
+
+opt_date=args.date or datetime.datetime.now()
+opt_date = datetime.datetime(opt_date.year, opt_date.month, opt_date.day)
 opt_parent=args.parent
 opt_child=args.child
 opt_datafile=args.datafile
@@ -288,6 +395,11 @@ context.show_page()
 
 other_parent=part1_data['parents'][this_parent['other_parent']]
 other_caregiver(context, other_parent)
+
+former_insurance(context, this_parent)
+
+this_child = part1_data['part1']['child'][opt_child]
+other_parent_took_care(context, other_parent)
 
 #layout.set_text(u"Hello World")
 #layout.set_text(u"NNNNNNNNNNN")
