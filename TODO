@@ -1,0 +1,11 @@
+-*- mode: org; -*-
+
+Brakujące elementy formularza:
+
++ godziny pracy zmianowej,
++ sprawdzenie czy w okresie zatrudnienia u porzedniego pracodawcy był
+  wypłacany zasiłek,
++ symbol państwa (płatnik)
++ zagraniczny kod pocztowy (płatnik)
++ nazwa państwa (płatnik)
++ wypisanie informacji o innym członku rodziny

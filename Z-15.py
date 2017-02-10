@@ -230,7 +230,7 @@ def other_caregiver(ctx, parent):
         boxed_mark(ctx, shift_w_y[0], shift_w_y[1])
     else:
         boxed_mark(ctx, shift_w_n[0], shift_w_n[1])
-    # TODO shift work hours
+    # TODO: Godziny pracy zmianowej
 
 def former_insurance(ctx, parent):
     (yes, no) = part2_layout['former_insurance']
@@ -242,7 +242,7 @@ def former_insurance(ctx, parent):
     if t is None:
         boxed_mark(ctx, no[0], no[1])
     else:
-        #TODO Sprawdzić czy u poprzedniego pracodawcy było wypłacane
+        #TODO: Sprawdzić czy u poprzedniego pracodawcy było wypłacane
         boxed_mark(ctx, yes[0], yes[1])
 
 def leaves_this_year(leaves):
@@ -435,6 +435,8 @@ former_insurance(context, this_parent)
 this_child = part1_data['part1']['child'][opt_child]
 other_parent_took_care(context, other_parent)
 context.show_page()
+
+# TODO: Wypisanie informacji o innym członku rodziny
 
 living_with_child(context, this_parent, opt_child, this_child)
 
