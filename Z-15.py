@@ -28,12 +28,22 @@ class DateArgAction(argparse.Action):
         print '%r %r %r' % (namespace, values, option_string)
         setattr(namespace, self.dest, _date)
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description='''
+Tworzy plik PDF zawierający wypełnienie formularza ZUS Z-15. Gdy nie
+została podana nazwa pliku (opcja --outfile) zostanie utworzony plik
+"Z-15.pdf". Utworzony plik należy połączyć z szablonem formularza
+w pliku Z-15-template.pdf następującym poleceniem:
+
+    pdftk Z-15.pdf multibackground Z-15-template.pdf output out.pdf
+''')
 parser.add_argument('--datafile', help='plik YAML z danym', required=True)
 parser.add_argument('--parent', help='rodzic występujący o zasiłek', required=True)
 parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
-parser.add_argument('--since', help='pierwszy dzień zwolnienia')
-parser.add_argument('--until', help='ostatni dzień zwolnienia')
+parser.add_argument('--outfile', help='wyjściowy plik PDF')
+# parser.add_argument('--since', help='pierwszy dzień zwolnienia')
+# parser.add_argument('--until', help='ostatni dzień zwolnienia')
 parser.add_argument('--date', help='data wypełnienia formularza', action=DateArgAction)
 args = parser.parse_args()
 
@@ -72,12 +82,23 @@ def pesel_data(nrid):
         raise PeselError('Blad numeru PESEL')
 ### /PESEL ###
 
-# Rozmiar kratki
-# 62.049-43.311 18.738 px
-# 709,934
-# 14.99pt
 surf = cairo.PDFSurface('Z-15.pdf', 595.275590551, 841.88976378)
 context = cairo.Context(surf)
+
+# cairo    inkscape
+# (0,0) -> (0.8, 824.690)
+
+# |      x1 |     y_1 |      x2 |       xm |   y_pdf |         x |      y |
+# |---------+---------+---------+----------+---------+-----------+--------|
+# |         |         |         |          |         |           |        |
+# #+TBLFM: $4=($1+$3)/2::$5=841.89-$2::$6=$4 - (8.25075/2)::$7=$5-17.2-1.53
+#
+# 17.2pt położenie linii podstawowej tekstu na Y=0
+# 1.53pt przesunięcie na środek kratki
+# 8.pt szerokość komórki znaku
+
+# def dotted(x,y):
+#   print "dotted_text(ctx, x+%f, y+%f-1.53, T)" % (x-X, Y-y-17.2-(0.901/2))
 
 part1_layout={
     'parent_id': (38.140625, 113.25),
@@ -100,23 +121,6 @@ part1_layout={
     'leave_until': (235.713625, 634.5),
 }
 
-# cairo    inkscape
-# (0,0) -> (0.8, 824.690)
-
-# |      x1 |     y_1 |      x2 |       xm |   y_pdf |         x |      y |
-# |---------+---------+---------+----------+---------+-----------+--------|
-# |  49.029 | 775.252 |  63.769 |   56.399 |  66.638 | 52.273625 | 47.908 |
-# | 181.690 | 775.252 | 196.430 |   189.06 |  66.638 | 184.93463 | 47.908 |
-# |  63.518 | 754.843 |  78.758 |   71.138 |  87.047 | 67.012625 | 68.317 |
-# | 181.439 | 754.843 | 196.679 |  189.059 |  87.047 | 184.93363 | 68.317 |
-# | 358.321 | 734.434 | 373.561 |  365.941 | 107.456 | 361.81563 | 88.726 |
-# | 417.281 | 734.434 | 432.522 | 424.9015 | 107.456 | 420.77613 | 88.726 |
-# #+TBLFM: $4=($1+$3)/2::$5=841.89-$2::$6=$4 - (8.25075/2)::$7=$5-17.2-1.53
-
-# 17.2pt położenie linii podstawowej tekstu na Y=0
-# 1.53pt przesunięcie na środek kratki
-# 8.pt szerokość komórki znaku
-
 part2_layout={
     'other_caregiver_p': ((52.634625, 695.602), (126.33563, 695.602)),
     'shift_work':  ((52.634625, 756.378), (126.33563, 756.378)),
@@ -134,13 +138,11 @@ part2_layout={
                           (52.399, 746.973),  # <14 lat
                           (52.399, 767.382),  # >= 14 lat
     # Strona 3.
-                          (30.958, 48.25),
-                      ),
+                          (30.958, 48.25)), # płatnik składek
+    # Strona 4.
+   'living_with_child': ((52.399, 47.908), (133.4705, 47.908)), # zamieszkanie z dzieckiem
+    'bank_account': (34.283, 110.056),
 }
-
-#get font families:
-#font_map = pangocairo.cairo_font_map_get_default()
-#families = font_map.list_families()
 
 pangocairo_context = pangocairo.CairoContext(context)
 pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
@@ -165,7 +167,7 @@ def _text(ctx, x, y, text, spacing):
 def boxed_text(ctx, x, y, text):
     _text(ctx, x, y, text, 6880)
 
-def line_text(ctx, x, y, text):
+def dotted_text(ctx, x, y, text):
     _text(ctx, x, y, text, 0)
 
 def boxed_mark(ctx, x, y):
@@ -294,15 +296,47 @@ def other_parent_took_care(ctx, parent):
 
     ctx.show_page()
 
-    employer_info(ctx, employer_info_box[0], employer_info_box[1])
+    employer_info(ctx, employer_info_box[0], employer_info_box[1], parent['employer'])
 
 def personal_info(ctx, x, y, parent):
     boxed_text(ctx, x+3.249+3.62, y+35.99-1.53, parent['id'])
-    line_text(ctx, x+6.82, y+72.9265-1.53, parent['last_name'])
-    line_text(ctx, x+6.82, y+101.9265-1.53, parent['first_name'])
+    dotted_text(ctx, x+6.82, y+72.9265-1.53, parent['last_name'])
+    dotted_text(ctx, x+6.82, y+101.9265-1.53, parent['first_name'])
 
 def employer_info(ctx, x, y, employer):
-    pass
+    dotted_text(ctx, x+6.820000, y+21.301500-1.53, employer['name'])
+    boxed_text(ctx, x+6.745, y+54.98-1.53, employer['post_code'])
+    dotted_text(ctx, x+134.042000, y+50.435500-1.53, employer['post_office'])
+    try:
+        T=employer['locality']
+        T=employer['suburb']
+    except KeyError:
+        pass
+    dotted_text(ctx, x+6.820000, y+85.586500-1.53, T)
+    dotted_text(ctx, x+6.820000, y+114.586500-1.53, employer['locality'])
+    dotted_text(ctx, x+6.820000, y+143.586500-1.53, employer['street'])
+    dotted_text(ctx, x+6.820000, y+170.411500-1.53, unicode(employer['housenumber']))
+    try:
+        T=unicode(employer['unit'])
+        dotted_text(ctx, x+111.956000, y+170.411500-1.53, T)
+    except:
+        pass
+    # TODO:
+    # + symbol państwa
+    # + zagraniczny kod pocztowy
+    # + nazwa państwa
+
+def living_with_child(ctx, parent, child_name, child):
+    (yes, no) = part2_layout['living_with_child']
+    _d = pesel_data(child['id'])
+    try:
+        l = parent['living_with']
+        if child_name in l:
+            boxed_mark(ctx, yes[0], yes[1])
+        else:
+            boxed_mark(ctx, no[0], no[1])
+    except KeyError:
+        boxed_mark(ctx, yes[0], yes[1])
 
 opt_date=args.date or datetime.datetime.now()
 opt_date = datetime.datetime(opt_date.year, opt_date.month, opt_date.day)
@@ -400,14 +434,10 @@ former_insurance(context, this_parent)
 
 this_child = part1_data['part1']['child'][opt_child]
 other_parent_took_care(context, other_parent)
-
-#layout.set_text(u"Hello World")
-#layout.set_text(u"NNNNNNNNNNN")
-#layout.set_attributes(pango.parse_markup(u"<span letter_spacing=\"6880\">NNNNNNNNNNN</span>")[0])
-#context.set_source_rgb(0, 0, 0)
-#pangocairo_context.update_layout(layout)
-#pangocairo_context.show_layout(layout)
 context.show_page()
 
-#with open("cairo_text.png", "wb") as image_file:
-#    surf.write_to_png(image_file)
+living_with_child(context, this_parent, opt_child, this_child)
+
+(x,y)=part2_layout['bank_account']
+t=unicode(this_parent['bank_account'])
+boxed_text(context, x, y, t)
