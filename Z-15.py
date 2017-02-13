@@ -10,6 +10,7 @@ import pangocairo
 import dateutil.parser
 import datetime
 import sys
+from pesel import *
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -46,41 +47,6 @@ parser.add_argument('--outfile', help='wyjściowy plik PDF')
 # parser.add_argument('--until', help='ostatni dzień zwolnienia')
 parser.add_argument('--date', help='data wypełnienia formularza', action=DateArgAction)
 args = parser.parse_args()
-
-### PESEL ###
-class PeselError(Exception):
-    def __init__(self,komunikat):
-        self.value=komunikat
-    def __str__(self):
-        return repr(self.value)
-
-def pesel_11(nrid):
-    '''Podaje ostatnią cyfrę peselu (jako znak) na podstawie poprzednich.'''
-    wagi='1379137913'
-    def _mn(a):
-        return int(a[0])*int(a[1])
-    x=sum(map(_mn,zip(nrid[0:10],wagi)))
-    return str((10-x%10)%10)
-
-def pesel_ok(nrid):
-    '''Określa poprawność PESELu na podstawie cyfry kontrolnej.'''
-    if len(nrid)<11:
-        return False
-    else:
-        return (nrid[10]==pesel_11(nrid))
-
-def pesel_data(nrid):
-    '''Podaje datę urodzenia na podstawie PESELu o ile jest poprawny'''
-    if pesel_ok(nrid):
-        d,m,r=int(nrid[4:6]),int(nrid[2:4]),int(nrid[0:2])
-        r,m=(m>80)*1800+(m<80)*(1900+(m/20)*100)+r,m%20
-        if m in range(1,13):
-            return datetime.date(r,m,d)
-        else:
-          raise PeselError('Blad 3 lub 4 cyfry!')
-    else:
-        raise PeselError('Blad numeru PESEL')
-### /PESEL ###
 
 surf = cairo.PDFSurface('Z-15.pdf', 595.275590551, 841.88976378)
 context = cairo.Context(surf)
