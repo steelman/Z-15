@@ -185,7 +185,7 @@ def shift_work(ctx, parent):
 
 def other_caregiver(ctx, parent):
     (_parent, spouse, work_y, work_n, shift_w_y, shift_w_n)=part2_layout['other_caregiver_d']
-    if parent['parent'].upper() == 'OJECIEC' or \
+    if parent['parent'].upper() == 'OJCIEC' or \
        parent['parent'].upper() == 'MATKA':
         boxed_mark(ctx, _parent[0], _parent[1])
     else:
