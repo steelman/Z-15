@@ -1,0 +1,18 @@
+użycie: Z-15.py [-h] --datafile DATAFILE --parent PARENT [--outfile OUTFILE]
+                [--date DATE]
+
+Tworzy plik PDF zawierający wypełnienie formularza ZUS Z-15. Gdy nie
+została podana nazwa pliku (opcja --outfile) zostanie utworzony plik
+"Z-15.pdf". Utworzony plik należy połączyć z szablonem formularza
+w pliku Z-15-template.pdf następującym poleceniem:
+
+    pdftk Z-15.pdf multibackground Z-15-template.pdf output out.pdf
+
+argumenty wymagane:
+  --datafile DATAFILE  plik YAML z danym
+  --parent PARENT      rodzic występujący o zasiłek
+
+argumenty opcjonalne:
+  -h, --help           show this help message and exit
+  --outfile OUTFILE    wyjściowy plik PDF
+  --date DATE          data wypełnienia formularza
