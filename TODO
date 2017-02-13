@@ -9,3 +9,8 @@ Brakujące elementy formularza:
 + zagraniczny kod pocztowy (płatnik)
 + nazwa państwa (płatnik)
 + wypisanie informacji o innym członku rodziny
+
+Błędy w działaniu i braki funkcjonalności:
+
++ Źle rozłożone wpisy w przypadku braku w systemie czcionki "M+ 1m"
++ Sprawdzanie aktualności formularza.

@@ -16,3 +16,7 @@ argumenty opcjonalne:
   -h, --help           show this help message and exit
   --outfile OUTFILE    wyjściowy plik PDF
   --date DATE          data wypełnienia formularza
+
+UWAGA! W bieżącej wersji proramu do poprawnego wypełnienia
+formularza konieczne jest zainstalowanie w systemie czcionki "M+ 1m"
+(https://osdn.net/projects/mplus-fonts/releases/).
