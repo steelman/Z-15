@@ -1,0 +1,123 @@
+# -*- indent-tabs-mode: nil; tab-stop-list: (2 4 6) -*-
+
+PARENTS:
+  # Klucz w słowniku rodziców, dowolny ciąg znaków.
+  jan:
+    # Numer PESEL
+    id: "85102043218"
+
+    # Nazwisko
+    last_name: Nowak
+
+    # Imię
+    first_name: Jan
+
+    # Rola: "ojciec" lub "matka"
+    parent: ojciec
+
+    # Etykieta drugiego rodzica.
+    other_parent: janina
+
+    # Członkowie rodziny we wspólnym gospodarstwie domowym
+    living_with: [janina, krzyś]
+
+    # Etykieta adresu ze słownika addresses
+    # Opcjonalne dla drugiego rodzica
+    address: home
+
+    # Etykieta pracodawcy
+    # Opcjonalne dla drugiego rodzica
+    employer: fabryka
+
+    # Poprzedni płatnik składek, jeżeli zmiana nastąpiła w bieżącym
+    # roku.
+    # Opcjonalne.
+    #former_employer: warsztat
+
+    # Praca zmianowa
+    # Opcjonalne
+    # Domyślnie: no
+    shift_work: no
+
+    # Numer konta bankowego
+    bank_account: "XXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+    # Lista zwolnień
+    leaves:
+        # Okres opieki nad dzieckiem "od" - "do" włącznie.
+      - since: 2016-10-11
+        until: 2016-10-14
+
+        # Czy jest inny domownik mogący zapewnić opiekę dziecku?
+        # Opcjonalne
+        # Domyślnie: no
+        other_caregiver: no
+
+        # Etykieta dziecka ze słownika children
+        child: krzyś
+
+      - since: 2017-02-03
+        until: 2017-02-07
+        child: krzyś
+
+  janina:
+    id: "85051554326"
+    last_name: Nowak
+    first_name: Janina
+    parent: matka
+    other_parent: jan
+    employer: biuro
+    leaves:
+      - since: 2017-01-23
+        until: 2017-01-27
+        other_caregiver: no
+        child: krzyś
+      - since: 2017-02-08
+        until: 2017-02-10
+        child: krzyś
+
+ADDRESSES:
+  # Pola adresu według specyfikacji OpenStreetmap.
+  #
+  # https://wiki.openstreetmap.org/wiki/Key:addr
+  # https://wiki.openstreetmap.org/wiki/Tag:place=suburb
+  #
+  # Pole post_office zawiera nazwę miejscowości, w której znajduje się
+  # urząd pocztowy (pole "Poczta" w danych płatnika).
+  home:
+    post_code: 00-825
+    post_office: Warszawa
+    city: Warszawa
+    street: Sienna
+    housenumber: 66
+    # Opcjonalne
+    door: 15
+    # Opcjonalne
+    suburb: Wola
+
+  fabryka:
+    # Nazwa Pracodawcy
+    name: Fabryka noży i nożyczek
+    post_code: 02-676
+    post_office: Warszawa
+    city: Warszawa
+    street: Postępu
+    housenumber: 15
+    suburb: Mokotów
+
+  biuro:
+    name: Biuro zarządzania
+    post_code: 02-634
+    post_office: Warszawa
+    city: Warszawa
+    street: Racławicka
+    housenumber: 99a
+    suburb: Mokotów
+
+CHILDREN:
+  krzyś:
+    id: "11213113577"
+    last_name: Nowak
+    first_name: Krzysztof
+    # "syn" lub "córka"
+    child: syn

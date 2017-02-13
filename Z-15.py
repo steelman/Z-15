@@ -1,9 +1,22 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# https://www.cairographics.org/cookbook/pycairo_pango/
 #
-# python Z-15.py && pdftk Z-15.pdf multibackground Z-15-template.pdf output out.pdf
+# Fill in ZUS Z-15 form according to data in a YAML file.
+# Copyright (C) 2016,2017  Łukasz Stelmach
 #
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import cairo
 import pango
 import pangocairo
@@ -41,14 +54,15 @@ w pliku Z-15-template.pdf następującym poleceniem:
 ''')
 parser.add_argument('--datafile', help='plik YAML z danym', required=True)
 parser.add_argument('--parent', help='rodzic występujący o zasiłek', required=True)
-parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
-parser.add_argument('--outfile', help='wyjściowy plik PDF')
+parser.add_argument('--outfile', help='wyjściowy plik PDF', default='Z-15.pdf')
+# parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
 # parser.add_argument('--since', help='pierwszy dzień zwolnienia')
 # parser.add_argument('--until', help='ostatni dzień zwolnienia')
 parser.add_argument('--date', help='data wypełnienia formularza', action=DateArgAction)
 args = parser.parse_args()
 
-surf = cairo.PDFSurface('Z-15.pdf', 595.275590551, 841.88976378)
+opt_outfile=args.outfile
+surf = cairo.PDFSurface(opt_outfile, 595.275590551, 841.88976378)
 context = cairo.Context(surf)
 
 # cairo    inkscape
@@ -73,11 +87,11 @@ part1_layout={
     'parent_born': (391.906625, 166.75),
     'address_post_code': (38.140625, 237.),
     'address_post_office': (141.320625, 237.),
-    'address_district': (38.140625, 263.75),
-    'address_locality': (38.140625, 290.5),
+    'address_suburb': (38.140625, 263.75),
+    'address_city': (38.140625, 290.5),
     'address_street': (38.140625, 317.25),
-    'address_house': (38.140625, 344.),
-    'address_flat': (156.065625, 344.),
+    'address_housenumber': (38.140625, 344.),
+    'address_door': (156.065625, 344.),
     'child_id': (38.140625, 484.48),
     'child_last_name': (38.140625, 511.23),
     'child_first_name': (38.140625, 537.98),
@@ -244,7 +258,7 @@ def other_parent_took_care(ctx, parent):
 
     for l in leaves_this_year(parent['leaves']):
         _s = l['since']
-        _c = part1_data['part1']['child'][l['child']]
+        _c = DATA['CHILDREN'][l['child']]
         _d = pesel_data(_c['id'])
         _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
         if _s < _age14:
@@ -253,7 +267,7 @@ def other_parent_took_care(ctx, parent):
 
     for l in leaves_this_year(parent['leaves']):
         _s = l['since']
-        _c = part1_data['part1']['child'][l['child']]
+        _c = DATA['CHILDREN'][l['child']]
         _d = pesel_data(_c['id'])
         _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
         if _s >= _age14:
@@ -262,7 +276,10 @@ def other_parent_took_care(ctx, parent):
 
     ctx.show_page()
 
-    employer_info(ctx, employer_info_box[0], employer_info_box[1], parent['employer'])
+    employer_info(ctx,
+                  employer_info_box[0],
+                  employer_info_box[1],
+                  DATA['ADDRESSES'][parent['employer']])
 
 def personal_info(ctx, x, y, parent):
     boxed_text(ctx, x+3.249+3.62, y+35.99-1.53, parent['id'])
@@ -274,18 +291,18 @@ def employer_info(ctx, x, y, employer):
     boxed_text(ctx, x+6.745, y+54.98-1.53, employer['post_code'])
     dotted_text(ctx, x+134.042000, y+50.435500-1.53, employer['post_office'])
     try:
-        T=employer['locality']
+        T=employer['city']
         T=employer['suburb']
     except KeyError:
         pass
     dotted_text(ctx, x+6.820000, y+85.586500-1.53, T)
-    dotted_text(ctx, x+6.820000, y+114.586500-1.53, employer['locality'])
+    dotted_text(ctx, x+6.820000, y+114.586500-1.53, employer['city'])
     dotted_text(ctx, x+6.820000, y+143.586500-1.53, employer['street'])
     dotted_text(ctx, x+6.820000, y+170.411500-1.53, unicode(employer['housenumber']))
     try:
-        T=unicode(employer['unit'])
+        T=unicode(employer['door'])
         dotted_text(ctx, x+111.956000, y+170.411500-1.53, T)
-    except:
+    except KeyError:
         pass
     # TODO:
     # + symbol państwa
@@ -307,79 +324,84 @@ def living_with_child(ctx, parent, child_name, child):
 opt_date=args.date or datetime.datetime.now()
 opt_date = datetime.datetime(opt_date.year, opt_date.month, opt_date.day)
 opt_parent=args.parent
-opt_child=args.child
 opt_datafile=args.datafile
 
 part1_date=''
 with open(opt_datafile,'r') as file:
-    part1_data=load(file,Loader=Loader)
+    DATA=load(file,Loader=Loader)
+
+this_parent=DATA['PARENTS'][opt_parent]
+this_leave=this_parent['leaves'][-1]
+other_parent=DATA['PARENTS'][this_parent['other_parent']]
+this_child = DATA['CHILDREN'][this_leave['child']]
 
 (x,y)=part1_layout['parent_id']
-t=unicode(part1_data['parents'][opt_parent]['id'])
+t=unicode(DATA['PARENTS'][opt_parent]['id'])
 d=pesel_data(t).strftime("%d%m%Y")
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['parent_last_name']
-t=unicode(part1_data['parents'][opt_parent]['last_name'])
+t=unicode(DATA['PARENTS'][opt_parent]['last_name'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['parent_first_name']
-t=unicode(part1_data['parents'][opt_parent]['first_name'])
+t=unicode(DATA['PARENTS'][opt_parent]['first_name'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['parent_born']
 boxed_text(context, x, y, d)
 
 (x,y)=part1_layout['address_post_code']
-t=unicode(part1_data['part1']['address']['post_code'])
+t=unicode(DATA['ADDRESSES'][this_parent['address']]['post_code'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['address_post_office']
-t=unicode(part1_data['part1']['address']['post_office'])
+t=unicode(DATA['ADDRESSES'][this_parent['address']]['post_office'])
 boxed_text(context, x, y, t)
 
-(x,y)=part1_layout['address_district']
-t=unicode(part1_data['part1']['address']['district'])
+(x,y)=part1_layout['address_suburb']
+t=unicode(DATA['ADDRESSES'][this_parent['address']]['suburb'])
 boxed_text(context, x, y, t)
 
-(x,y)=part1_layout['address_locality']
-t=unicode(part1_data['part1']['address']['locality'])
+(x,y)=part1_layout['address_city']
+t=unicode(DATA['ADDRESSES'][this_parent['address']]['city'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['address_street']
-t=unicode(part1_data['part1']['address']['street'])
+t=unicode(DATA['ADDRESSES'][this_parent['address']]['street'])
 boxed_text(context, x, y, t)
 
-(x,y)=part1_layout['address_house']
-t=unicode(part1_data['part1']['address']['house'])
+(x,y)=part1_layout['address_housenumber']
+t=unicode(DATA['ADDRESSES'][this_parent['address']]['housenumber'])
 boxed_text(context, x, y, t)
 
-(x,y)=part1_layout['address_flat']
-t=unicode(part1_data['part1']['address']['flat'])
-boxed_text(context, x, y, t)
+(x,y)=part1_layout['address_door']
+try:
+    t=unicode(DATA['ADDRESSES'][this_parent['address']]['door'])
+    boxed_text(context, x, y, t)
+except KeyError:
+    pass
 
 (x,y)=part1_layout['child_id']
-t=unicode(part1_data['part1']['child'][opt_child]['id'])
+t=unicode(this_child['id'])
 d=pesel_data(t).strftime("%d%m%Y")
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['child_last_name']
-t=unicode(part1_data['part1']['child'][opt_child]['last_name'])
+t=unicode(this_child['last_name'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['child_first_name']
-t=unicode(part1_data['part1']['child'][opt_child]['first_name'])
+t=unicode(this_child['first_name'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['child_relation']
-t=unicode(part1_data['part1']['child'][opt_child]['relation'])
+t=unicode(this_child['child'])
 boxed_text(context, x, y, t)
 
 (x,y)=part1_layout['child_born']
 boxed_text(context, x, y, d)
 
-this_parent=part1_data['parents'][opt_parent]
-this_leave=this_parent['leaves'][-1]
 (x,y)=part1_layout['leave_since']
 d=this_leave['since'].strftime('%d%m%Y')
 boxed_text(context, x, y, d)
@@ -393,18 +415,16 @@ shift_work(context, this_parent)
 
 context.show_page()
 
-other_parent=part1_data['parents'][this_parent['other_parent']]
 other_caregiver(context, other_parent)
 
 former_insurance(context, this_parent)
 
-this_child = part1_data['part1']['child'][opt_child]
 other_parent_took_care(context, other_parent)
 context.show_page()
 
 # TODO: Wypisanie informacji o innym członku rodziny
 
-living_with_child(context, this_parent, opt_child, this_child)
+living_with_child(context, this_parent, this_leave['child'], this_child)
 
 (x,y)=part2_layout['bank_account']
 t=unicode(this_parent['bank_account'])
