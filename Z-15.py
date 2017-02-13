@@ -187,10 +187,8 @@ def other_caregiver(ctx, parent):
     (_parent, spouse, work_y, work_n, shift_w_y, shift_w_n)=part2_layout['other_caregiver_d']
     if parent['parent'].upper() == 'OJECIEC' or \
        parent['parent'].upper() == 'MATKA':
-        print "a parent"
         boxed_mark(ctx, _parent[0], _parent[1])
     else:
-        print "a spouse"
         boxed_mark(ctx, spouse[0], spouse[1])
 
     try:
@@ -321,12 +319,11 @@ def living_with_child(ctx, parent, child_name, child):
     except KeyError:
         boxed_mark(ctx, yes[0], yes[1])
 
-opt_date=args.date or datetime.datetime.now()
+opt_date=args.date or datetime.date.today()
 opt_date = datetime.datetime(opt_date.year, opt_date.month, opt_date.day)
 opt_parent=args.parent
 opt_datafile=args.datafile
 
-part1_date=''
 with open(opt_datafile,'r') as file:
     DATA=load(file,Loader=Loader)
 
