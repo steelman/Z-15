@@ -128,10 +128,16 @@ pangocairo_context = pangocairo.CairoContext(context)
 pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
 
 layout = pangocairo_context.create_layout()
-fontname = 'M+ 1m 12'
+fontname = 'M+ 1m,mono 15'
 font_desc = pango.FontDescription(fontname)
-font_desc.set_size(12*pango.SCALE)
 layout.set_font_description(font_desc)
+
+# TODO
+pctx=layout.get_context()
+pfm=pctx.get_metrics(font_desc, pango.Language('pl'))
+print repr(pfm.get_ascent())
+sys.exit(1)
+# /TODO
 
 def _text(ctx, x, y, text, spacing):
     ctx.save()
