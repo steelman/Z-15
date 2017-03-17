@@ -55,6 +55,7 @@ w pliku Z-15-template.pdf następującym poleceniem:
 parser.add_argument('--datafile', help='plik YAML z danym', required=True)
 parser.add_argument('--parent', help='rodzic występujący o zasiłek', required=True)
 parser.add_argument('--outfile', help='wyjściowy plik PDF', default='Z-15.pdf')
+parser.add_argument('--font', help='czcionka', default='M+ 1m,mono')
 # parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
 # parser.add_argument('--since', help='pierwszy dzień zwolnienia')
 # parser.add_argument('--until', help='ostatni dzień zwolnienia')
@@ -73,51 +74,50 @@ args = parser.parse_args()
 # 1.53pt przesunięcie na środek kratki
 # 8.pt szerokość komórki znaku
 
-# def dotted(x,y):
-#   print "dotted_text(ctx, x+%f, y+%f-1.53, T)" % (x-X, Y-y-17.2-(0.901/2))
-
 part1_layout={
-    'parent_id': (38.140625, 113.25),
-    'parent_last_name': (38.140625, 140.),
-    'parent_first_name': (38.140625, 166.75),
-    'parent_born': (391.906625, 166.75),
-    'address_post_code': (38.140625, 237.),
-    'address_post_office': (141.320625, 237.),
-    'address_suburb': (38.140625, 263.75),
-    'address_city': (38.140625, 290.5),
-    'address_street': (38.140625, 317.25),
-    'address_housenumber': (38.140625, 344.),
-    'address_door': (156.065625, 344.),
-    'child_id': (38.140625, 484.48),
-    'child_last_name': (38.140625, 511.23),
-    'child_first_name': (38.140625, 537.98),
-    'child_relation': (38.140625, 564.73),
-    'child_born': (377.167625, 564.73),
-    'leave_since': (88.311625, 634.5),
-    'leave_until': (235.713625, 634.5),
+    'parent_id': (34.649, 709.934),
+    'parent_last_name' : (34.649, 683.194),
+    'parent_first_name' : (34.649, 656.444),
+    'parent_born' : (388.415, 656.444),
+    'address_post_office' : (137.829, 586.194),
+    'address_post_code' : (34.649, 586.194),
+    'address_suburb' : (34.649, 559.444),
+    'address_city' : (34.649, 532.694),
+    'address_street' : (34.649, 505.944),
+    'address_housenumber' : (34.649, 479.194),
+    'address_door' : (152.574, 479.194),
+    'child_id' : (34.649, 338.704),
+    'child_last_name' : (34.649, 311.964),
+    'child_first_name' : (34.649, 285.885),
+    'child_relation' : (34.649, 259.145),
+    'child_born' : (373.676, 259.145),
+    'leave_since' : (84.818, 188.644),
+    'leave_until' : (232.220, 188.644),
 }
 
 part2_layout={
-    'other_caregiver_p': ((52.634625, 695.602), (126.33563, 695.602)),
-    'shift_work':  ((52.634625, 756.378), (126.33563, 756.378)),
-    # Strona 2.
-    'other_caregiver_d': ((52.399, 47.908), (184.93463, 47.908),
-                          (67.012625, 68.317), (184.93363, 68.317),
-                          (361.81563, 88.726), (420.77613, 88.726)),
-    'former_insurance': ((420.4035, 143.719), ( 479.364, 143.719)),
-    'other_parent_care': ((52.399, 503.74),  # matka
-                          (52.399, 524.149), # ojciec
-                          (52.399, 544.559), # małżonek/małżonka
-                          (31.039, 565.684), # dane osoby
-                          (170.887, 726.563), # TAK, porała zasiłek
-                          (229.848, 726.563), # NIE pobrała zasiłku
-                          (52.399, 746.973),  # <14 lat
-                          (52.399, 767.382),  # >= 14 lat
-    # Strona 3.
-                          (30.958, 48.25)), # płatnik składek
-    # Strona 4.
-   'living_with_child': ((52.399, 47.908), (133.4705, 47.908)), # zamieszkanie z dzieckiem
-    'bank_account': (34.283, 110.056),
+    # Strona 1
+    'other_caregiver_p': ((49.140, 127.542), (122.841, 127.542)),
+    'shift_work': ((48.640, 66.766), (122.341, 66.766)),
+    # Strona 2
+    'other_caregiver_d': ((48.778, 775.252),  # Matka/ojciec
+                          (181.439, 775.252), # małżonek/małżonka
+                          (63.518, 754.843), (181.439, 754.843),   # pracuje/nie pracuej
+                          (358.321, 734.434), (417.281, 734.434)), # praca zmianowa
+    'former_insurance': ( (416.783, 679.441), (475.744, 679.411)),
+    'other_parent_care': ((48.799, 319.420), # matka dziecka
+                          (48.799, 299.011), # ojciec dziecka
+                          (48.799, 278.601), # małżonek/małżonka
+                          (31.039, 259.006), # dane osobowe
+                          (167.267, 96.597), # TAK pobrał(a) zasiłek
+                          (226.228, 96.597), # NIE pobrał(a) zasiłku
+                          (48.779, 76.187),  # <14 lat
+                          (48.779, 55.778),  # >=14 lat
+    # Strona 3
+                          (30.958, 793.640)), # płatnik składek
+    # Strona 4
+    'living_with_child': ((48.779, 775.252), (129.850, 775.252), ),
+    'bank_account': (30.778, 713.104),
 }
 
 opt_outfile=args.outfile
@@ -128,32 +128,71 @@ pangocairo_context = pangocairo.CairoContext(context)
 pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
 
 layout = pangocairo_context.create_layout()
-fontname = 'M+ 1m 12'
+fontname = 'M+ 10m,mono'
+fontname = args.font
 font_desc = pango.FontDescription(fontname)
-font_desc.set_size(12*pango.SCALE)
+font_desc.set_absolute_size(16*pango.SCALE)
 layout.set_font_description(font_desc)
 
+# TODO
+pctx=layout.get_context()
+
+#   TODO wydobyć to programowo indeks znaku "M"
+#   "M" w większości czcionek jes pod indeksem 48
+#   (x, y, width, height)
+# font=pctx.load_font(font_desc)
+# ink,log = font.get_glyph_extents(48)
+# print repr(ink)
+# print repr(log)
+# font_ascent = pango.ASCENT(log)/float(pango.SCALE)
+# font_descent = pango.DESCENT(log)/float(pango.SCALE)
+# font_width = (pango.RBEARING(log) - pango.LBEARING(log))/float(pango.SCALE)
+# print font_ascent
+# print font_descent
+# print font_width
+
+pfm=pctx.get_metrics(font_desc, pango.Language('pl'))
+font_ascent = pfm.get_ascent()/float(pango.SCALE)
+font_descent = pfm.get_descent()/float(pango.SCALE)
+font_width = pfm.get_approximate_char_width()/float(pango.SCALE)
+
 def _text(ctx, x, y, text, spacing):
+    _y = 841.89 - y - 0.45
     ctx.save()
-    ctx.translate(x,y)
+    ctx.translate(x,_y)
     t = pango.parse_markup(u"<span letter_spacing=\"" + str(spacing) +"\">" + text.upper() + "</span>")
     layout.set_attributes(t[0])
     layout.set_text(t[1])
     ctx.set_source_rgb(0,0,0)
+    #    DEBUG: rysuj skośną linię
+    # rect = layout.get_extents()[1]
+    # ctx.set_line_width(1)
+    # ctx.move_to(rect[0]/float(pango.SCALE), rect[1]/float(pango.SCALE))
+    # ctx.line_to(rect[2]/float(pango.SCALE), rect[3]/float(pango.SCALE))
+    # ctx.stroke()
+    # print ">" + repr([float(x)/pango.SCALE for x in rect])
     pangocairo_context.update_layout(layout)
     pangocairo_context.show_layout(layout)
     ctx.restore()
 
 def boxed_text(ctx, x, y, text):
-    _text(ctx, x, y, text, 6880)
+    # 14,74 pt - rozmiar kratki
+    _y = y + font_ascent # - (14.74 - font_ascent)/2
+    _x = x + (14.74 - font_width)/2
+    _s = int((14.74 - font_width) * pango.SCALE)
+    _text(ctx, _x, _y, text, _s)
 
 def dotted_text(ctx, x, y, text):
-    _text(ctx, x, y, text, 0)
+    _y = y + font_ascent # - (14.74 - font_ascent)/2
+    _x = x + (14.74 - font_width)/2
+    _text(ctx, x, _y, text, 0)
 
 def boxed_mark(ctx, x, y):
+    _y = 841.89 - y - font_ascent
+    _x = x + (14.74 - font_width)/2
     ctx.save()
-    ctx.translate(x,y)
-    t = pango.parse_markup(u"<span letter_spacing=\"6880\">X</span>")
+    ctx.translate(_x,_y)
+    t = pango.parse_markup(u"<span>X</span>")
     layout.set_attributes(t[0])
     layout.set_text(t[1])
     ctx.set_source_rgb(0,0,0)
@@ -280,26 +319,26 @@ def other_parent_took_care(ctx, parent):
                   DATA['ADDRESSES'][parent['employer']])
 
 def personal_info(ctx, x, y, parent):
-    boxed_text(ctx, x+3.249+3.62, y+35.99-1.53, parent['id'])
-    dotted_text(ctx, x+6.82, y+72.9265-1.53, parent['last_name'])
-    dotted_text(ctx, x+6.82, y+101.9265-1.53, parent['first_name'])
+    boxed_text(ctx, x+3.249, y-35.99, parent['id'])
+    dotted_text(ctx, x+6.82, y-73.377, parent['last_name'])
+    dotted_text(ctx, x+6.82, y-102.377, parent['first_name'])
 
 def employer_info(ctx, x, y, employer):
-    dotted_text(ctx, x+6.820000, y+21.301500-1.53, employer['name'])
-    boxed_text(ctx, x+6.745, y+54.98-1.53, employer['post_code'])
-    dotted_text(ctx, x+134.042000, y+50.435500-1.53, employer['post_office'])
+    dotted_text(ctx, x+6.82, y-38.952, employer['name'])
+    boxed_text(ctx, x+3.25, y-72.18, employer['post_code'])
+    dotted_text(ctx, x+134.042, y-68.086, employer['post_office'])
     try:
         T=employer['city']
         T=employer['suburb']
     except KeyError:
         pass
-    dotted_text(ctx, x+6.820000, y+85.586500-1.53, T)
-    dotted_text(ctx, x+6.820000, y+114.586500-1.53, employer['city'])
-    dotted_text(ctx, x+6.820000, y+143.586500-1.53, employer['street'])
-    dotted_text(ctx, x+6.820000, y+170.411500-1.53, unicode(employer['housenumber']))
+    dotted_text(ctx, x+6.820000, y-103.237, T)
+    dotted_text(ctx, x+6.820000, y-132.237, employer['city'])
+    dotted_text(ctx, x+6.820000, y-161.237, employer['street'])
+    dotted_text(ctx, x+6.820000, y-188.062, unicode(employer['housenumber']))
     try:
         T=unicode(employer['door'])
-        dotted_text(ctx, x+111.956000, y+170.411500-1.53, T)
+        dotted_text(ctx, x+109.784, y-188.062, T)
     except KeyError:
         pass
     # TODO:
