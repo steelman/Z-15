@@ -61,10 +61,6 @@ parser.add_argument('--outfile', help='wyjściowy plik PDF', default='Z-15.pdf')
 parser.add_argument('--date', help='data wypełnienia formularza', action=DateArgAction)
 args = parser.parse_args()
 
-opt_outfile=args.outfile
-surf = cairo.PDFSurface(opt_outfile, 595.275590551, 841.88976378)
-context = cairo.Context(surf)
-
 # cairo    inkscape
 # (0,0) -> (0.8, 824.690)
 
@@ -123,6 +119,10 @@ part2_layout={
    'living_with_child': ((52.399, 47.908), (133.4705, 47.908)), # zamieszkanie z dzieckiem
     'bank_account': (34.283, 110.056),
 }
+
+opt_outfile=args.outfile
+surf = cairo.PDFSurface(opt_outfile, 595.276, 841.89)
+context = cairo.Context(surf)
 
 pangocairo_context = pangocairo.CairoContext(context)
 pangocairo_context.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
