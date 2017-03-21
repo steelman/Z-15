@@ -346,9 +346,14 @@ def employer_info(ctx, x, y, employer):
     # + zagraniczny kod pocztowy
     # + nazwa państwa
 
-def living_with_child(ctx, parent, child_name, child):
+def living_with_child_above_fourteen(ctx, parent, this_leave, child):
     (yes, no) = part2_layout['living_with_child']
+    _s = this_leave['since']
     _d = pesel_data(child['id'])
+    _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
+    child_name = this_leave['child']
+    if _s < _age14:
+        return
     try:
         l = parent['living_with']
         if child_name in l:
@@ -460,7 +465,7 @@ context.show_page()
 
 # TODO: Wypisanie informacji o innym członku rodziny
 
-living_with_child(context, this_parent, this_leave['child'], this_child)
+living_with_child_above_fourteen(context, this_parent, this_leave, this_child)
 
 (x,y)=part2_layout['bank_account']
 t=unicode(this_parent['bank_account'])
