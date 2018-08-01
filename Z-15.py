@@ -95,7 +95,7 @@ def other_parent_took_care(parent):
     days_gt14 = 0
 
     f = u'topmostSubform[0].Page3[0].WybórTAKNIE3[0]'
-    if leaves_this_year(parent['leaves']) <= 0:
+    if len(leaves_this_year(parent['leaves'])) <= 0:
         fields.append((f, FDFFalse))
         return fields
 
