@@ -123,3 +123,6 @@ CHILDREN:
     first_name: Krzysztof
     # "syn" lub "córka"
     child: syn
+    # Dziecko ma orzeczenie o znacznym stopniu niepełnosprawności
+    # Pole ocjonalne, dopuszczalne wartości: Yes/No
+    disability: No

@@ -52,7 +52,7 @@ w pliku Z-15-template.pdf następującym poleceniem:
 ''')
 parser.add_argument('--datafile', help='plik YAML z danym', required=True)
 parser.add_argument('--parent', help='rodzic występujący o zasiłek', required=True)
-parser.add_argument('--outfile', help='wyjściowy plik PDF', default='Z-15.fdf')
+parser.add_argument('--outfile', help='wyjściowy plik FDF', default='Z-15.fdf')
 parser.add_argument('--font', help='czcionka', default='M+ 1m,mono')
 # parser.add_argument('--child', help='dziecko pozostające pod opieką', required=True)
 # parser.add_argument('--since', help='pierwszy dzień zwolnienia')
@@ -108,16 +108,16 @@ def other_parent_took_care(parent):
         _d = pesel_data(_c['id'])
         _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
         if _s < _age14:
-            print("_s: {}".format(_s.strftime("%Y-%m-%d")))
-            print("_u: {}".format(_u.strftime("%Y-%m-%d")))
             days_lt14 += (_u - _s).days + 1
         else:
-            days_gt14 += (_u - _s).days
+            days_gt14 += (_u - _s).days + 1
 
     if days_lt14 > 0:
+        fields.append((u'topmostSubform[0].Page3[0].ZaznaczX4a[0]', FDFTrue))
         fields.append((u'topmostSubform[0].Page3[0].Liczbadni3a[0]', days_lt14))
 
     if days_gt14 >0:
+        fields.append((u'topmostSubform[0].Page3[0].ZaznaczX4b[0]', FDFTrue))
         fields.append((u'topmostSubform[0].Page3[0].Liczbadni3b[0]', days_gt14))
 
     return fields
@@ -153,33 +153,35 @@ this_child = DATA['CHILDREN'][this_leave['child']]
 
 fields = []
 
-# Okres, za który ubiegasz się o zasiłek opiekuńczy
-fields.append((u'topmostSubform[0].Page1[0].Tekst1[0]',
-               this_leave['since'].strftime('%Y-%m-%d') + " - " +
-               this_leave['until'].strftime('%Y-%m-%d')))
+# Dane rodzica
+fields.append((u'topmostSubform[0].Page1[0].PESEL[0]', this_parent['id']))
+# (u'topmostSubform[0].Page1[0].Rodzajseriainumerdokumentu[0]', None),   # Dokument tożsamości
+fields.append((u'topmostSubform[0].Page1[0].Imię[0]', this_parent['first_name']))
+fields.append((u'topmostSubform[0].Page1[0].Nazwisko[0]', this_parent['last_name']))
+fields.append((u'topmostSubform[0].Page1[0].Ulica[0]', DATA['ADDRESSES'][this_parent['address']]['street']))
+fields.append((u'topmostSubform[0].Page1[0].Numerdomu[0]', DATA['ADDRESSES'][this_parent['address']]['housenumber']))
+fields.append((u'topmostSubform[0].Page1[0].Numerlokalu[0]', DATA['ADDRESSES'][this_parent['address']]['door']))
+fields.append((u'topmostSubform[0].Page1[0].Kodpocztowy[0]', DATA['ADDRESSES'][this_parent['address']]['post_code']))
+fields.append((u'topmostSubform[0].Page1[0].Poczta[0]', DATA['ADDRESSES'][this_parent['address']]['post_office']))
+fields.append((u'topmostSubform[0].Page1[0].Miejscowość[0]', DATA['ADDRESSES'][this_parent['address']]['city']))
 
-# Zwolnienie lekarske
-fields.append((u'topmostSubform[0].Page1[0].Tekst2[0]',
+# Okres, za który ubiegasz się o zasiłek opiekuńczy
+fields.append((u'topmostSubform[0].Page2[0].Tekst1a[0]',
                this_leave['since'].strftime('%Y-%m-%d') + " - " +
                this_leave['until'].strftime('%Y-%m-%d')))
 
 # Dane dziecka
-fields.append((u'topmostSubform[0].Page1[0].PESEL[0]', this_child['id'])) # PESEL
+fields.append((u'topmostSubform[0].Page2[0].PESEL[0]', this_child['id'])) # PESEL
 # (u'topmostSubform[0].Page1[0].Rodzajseriainumerdokumentu[0]', None),   # Dokument tożsamości
-fields.append((u'topmostSubform[0].Page1[0].Imię[0]', this_child['first_name'])) # Imię
-fields.append((u'topmostSubform[0].Page1[0].Nazwisko[0]', this_child['last_name']))
-fields.append((u'topmostSubform[0].Page1[0].Dataurodzenia[0]', pesel_data(this_child['id']).strftime("%d%m%Y")))
+fields.append((u'topmostSubform[0].Page2[0].Imię[0]', this_child['first_name'])) # Imię
+fields.append((u'topmostSubform[0].Page2[0].Nazwisko[0]', this_child['last_name']))
+fields.append((u'topmostSubform[0].Page2[0].Dataurodzenia[0]', pesel_data(this_child['id']).strftime("%d%m%Y")))
 
-# Dane rodzica
-fields.append((u'topmostSubform[0].Page2[0].PESEL[0]', this_parent['id']))
-# (u'topmostSubform[0].Page2[0].Rodzajseriainumerdokumentu[0]', None),   # Dokument tożsamości
-fields.append((u'topmostSubform[0].Page2[0].Imię[0]', this_parent['first_name']))
-fields.append((u'topmostSubform[0].Page2[0].Nazwisko[0]', this_parent['last_name']))
-fields.append((u'topmostSubform[0].Page2[0].Ulica[0]', DATA['ADDRESSES'][this_parent['address']]['street']))
-fields.append((u'topmostSubform[0].Page2[0].Numerdomu[0]', DATA['ADDRESSES'][this_parent['address']]['housenumber']))
-fields.append((u'topmostSubform[0].Page2[0].Numerlokalu[0]', DATA['ADDRESSES'][this_parent['address']]['door']))
-fields.append((u'topmostSubform[0].Page2[0].Kodpocztowy[0]', DATA['ADDRESSES'][this_parent['address']]['post_code']))
-fields.append((u'topmostSubform[0].Page2[0].Poczta[0]', DATA['ADDRESSES'][this_parent['address']]['post_office']))
+try:
+    t = this_child['disability']
+except:
+    t = False
+fields.append((u'topmostSubform[0].Page2[0].Dzieckomaorzeczenie[0]', FDFTrue if t else FDFFalse))
 
 # Oświadczenia
 # Jest domownik mogący zapewnić opiekę dziecku
@@ -189,6 +191,11 @@ except KeyError:
     t = False
 fields.append((u'topmostSubform[0].Page2[0].WybórTAKNIE[0]', FDFTrue if t else FDFFalse))
 
+# W jakich dniach inny domownik może sprawować opiekę
+#fields.append((u'topmostSubform[0].Page2[0].Tekst1[0]',
+#               this_leave['since'].strftime('%Y-%m-%d') + " - " +
+#               this_leave['until'].strftime('%Y-%m-%d')))
+
 # Praca zmianowa
 try:
     t = this_parent['shift_work']
@@ -196,6 +203,10 @@ except KeyError:
     t = False
 fields.append((u'topmostSubform[0].Page2[0].WybórTAKNIE4[0]', FDFTrue if t else FDFFalse))
 
+# Godziny pracy w okresie, za który ubiegasz się o zasiłek
+#fields.append((u'topmostSubform[0].Page2[0].Tekst2[0]',
+#               this_leave['since'].strftime('%Y-%m-%d') + " - " +
+#               this_leave['until'].strftime('%Y-%m-%d')))
 
 # Pozostajesz we wspólnym gospodarstwie z dzieckiem pow. 14 lat.
 fields.append((u'topmostSubform[0].Page2[0].WybórTAKNIE2[0]',
