@@ -37,7 +37,7 @@ class DateArgAction(argparse.Action):
     #     super(FooAction, self).__init__(option_strings, dest, **kwargs)
     def __call__(self, parser, namespace, values, option_string=None):
         _date = dateutil.parser.parse(values)
-        print '%r %r %r' % (namespace, values, option_string)
+        print('{} {} {}'.format(namespace, values, option_string))
         setattr(namespace, self.dest, _date)
 
 parser = argparse.ArgumentParser(
@@ -95,7 +95,7 @@ def other_parent_took_care(parent):
     days_gt14 = 0
 
     f = u'topmostSubform[0].Page3[0].WybórTAKNIE3[0]'
-    if leaves_this_year(parent['leaves']) <= 0:
+    if len(leaves_this_year(parent['leaves'])) <= 0:
         fields.append((f, FDFFalse))
         return fields
 
@@ -108,8 +108,8 @@ def other_parent_took_care(parent):
         _d = pesel_data(_c['id'])
         _age14 = datetime.date(_d.year + 14, _d.month, _d.day)
         if _s < _age14:
-            print "_s:" + _s.strftime("%Y-%m-%d")
-            print "_u:" + _u.strftime("%Y-%m-%d")
+            print("_s: {}".format(_s.strftime("%Y-%m-%d")))
+            print("_u: {}".format(_u.strftime("%Y-%m-%d")))
             days_lt14 += (_u - _s).days + 1
         else:
             days_gt14 += (_u - _s).days

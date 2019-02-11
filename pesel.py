@@ -57,7 +57,7 @@ def pesel_data(nrid):
     '''Podaje datê urodzenia na podstawie PESELu o ile jest poprawny'''
     if pesel_ok(nrid):
         d,m,r=int(nrid[4:6]),int(nrid[2:4]),int(nrid[0:2])
-        r,m=(m>80)*1800+(m<80)*(1900+(m/20)*100)+r,m%20
+        r,m=int((m>80)*1800+(m<80)*(1900+(m/20)*100)+r),int(m%20)
         if m in range(1,13):
             return datetime.date(r,m,d)
         else:
